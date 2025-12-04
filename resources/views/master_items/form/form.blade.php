@@ -1,53 +1,86 @@
-<form method="POST">
+<form method="POST"
+      action="{{ url('master-items/form/'.$method.'/'.($item->id ?? 0)) }}"
+      enctype="multipart/form-data">
     @csrf
+
     @if($method == 'edit')
-    <div class="form-group">
-        <label>Kode Barang</label>
-        <input type="text" class="form-control" name="kode_barang" required readonly value="{{$item->kode ?? ''}}">
-    </div>
+        <div class="mb-3">
+            <label class="form-label">Kode Barang</label>
+            <input type="text" class="form-control" name="kode_barang" readonly
+                   value="{{ $item->kode ?? '' }}">
+        </div>
     @endif
 
-    <div class="form-group">
-        <label>Nama</label>
-        <input type="text" class="form-control" name="nama" required  value="{{$item->nama ?? ''}}">
+    <div class="mb-3">
+        <label class="form-label">Nama</label>
+        <input type="text" class="form-control" name="nama" required
+               value="{{ old('nama', $item->nama ?? '') }}">
     </div>
 
-    <div class="form-group">
-        <label>Harga Beli</label>
-        <input type="number" class="form-control" name="harga_beli" required  value="{{$item->harga_beli ?? ''}}">
+    <div class="mb-3">
+        <label class="form-label">Harga Beli</label>
+        <input type="number" class="form-control" name="harga_beli" required
+               value="{{ old('harga_beli', $item->harga_beli ?? '') }}">
     </div>
 
-    <div class="form-group">
-        <label>Laba (dalam persen)</label>
-        <input type="number" class="form-control" name="laba" required  value="{{$item->laba ?? ''}}">
+    <div class="mb-3">
+        <label class="form-label">Laba (dalam persen)</label>
+        <input type="number" class="form-control" name="laba" required
+               value="{{ old('laba', $item->laba ?? '') }}">
     </div>
 
-    @php $selected = $item->supplier ?? ''; @endphp
-    <div class="form-group">
-        <label>Supplier</label>
-        <select class="form-control" required name="supplier">
-            <option @if($selected == '') selected @endif value="">--Pilih--</option>
-            <option @if($selected == 'Tokopaedi') selected @endif>Tokopaedi</option>
-            <option @if($selected == 'Bukulapuk') selected @endif>Bukulapuk</option>
-            <option @if($selected == 'TokoBagas') selected @endif>TokoBagas</option>
-            <option @if($selected == 'E Commurz') selected @endif>E Commurz</option>
-            <optio @if($selected == 'Blublu') selected @endif>Blublu</option>
+    @php $selectedSupplier = $item->supplier ?? ''; @endphp
+    <div class="mb-3">
+        <label class="form-label">Supplier</label>
+        <select class="form-select" required name="supplier">
+            <option value="" @if($selectedSupplier == '') selected @endif>--Pilih--</option>
+            <option value="Tokopaedi" @if($selectedSupplier == 'Tokopaedi') selected @endif>Tokopaedi</option>
+            <option value="Bukulapuk" @if($selectedSupplier == 'Bukulapuk') selected @endif>Bukulapuk</option>
+            <option value="TokoBagas" @if($selectedSupplier == 'TokoBagas') selected @endif>TokoBagas</option>
+            <option value="E Commurz" @if($selectedSupplier == 'E Commurz') selected @endif>E Commurz</option>
+            <option value="Blublu" @if($selectedSupplier == 'Blublu') selected @endif>Blublu</option>
         </select>
     </div>
 
-    @php $selected = $item->jenis ?? ''; @endphp
-    <div class="form-group">
-        <label>Jenis</label>
-        <select class="form-control" required name="jenis">
-            <option @if($selected == '') selected @endif value="">--Pilih--</option>
-            <option @if($selected == 'Obat') selected @endif>Obat</option>
-            <option @if($selected == 'Alkes') selected @endif>Alkes</option>
-            <option @if($selected == 'Matkes') selected @endif>Matkes</option>
-            <optio @if($selected == 'Umum') selected @endif>Umum</option>
-            <optio @if($selected == 'ATK') selected @endif>ATK</option>
+    @php $selectedJenis = $item->jenis ?? ''; @endphp
+    <div class="mb-3">
+        <label class="form-label">Jenis</label>
+        <select class="form-select" required name="jenis">
+            <option value="" @if($selectedJenis == '') selected @endif>--Pilih--</option>
+            <option value="Obat" @if($selectedJenis == 'Obat') selected @endif>Obat</option>
+            <option value="Alkes" @if($selectedJenis == 'Alkes') selected @endif>Alkes</option>
+            <option value="Matkes" @if($selectedJenis == 'Matkes') selected @endif>Matkes</option>
+            <option value="Umum" @if($selectedJenis == 'Umum') selected @endif>Umum</option>
+            <option value="ATK" @if($selectedJenis == 'ATK') selected @endif>ATK</option>
         </select>
     </div>
 
-    <button class="btn btn-primary mt-3">Submit</button>
+    {{-- 🔥 Field Kategori (many-to-many) --}}
+    <div class="mb-3">
+    <label for="kategori_id" class="form-label">Kategori</label>
+    <select name="kategori_ids[]" id="kategori_id" class="form-select">
+        <option value="">-- Pilih Kategori --</option>
+        @foreach($kategoris as $kategori)
+            <option value="{{ $kategori->id }}"
+                @if($item->exists && $item->kategoris->contains($kategori->id)) selected @endif>
+                {{ $kategori->kode }} - {{ $kategori->nama }}
+            </option>
+        @endforeach
+    </select>
+</div>
 
+    {{-- Foto --}}
+    <div class="mb-3">
+        <label class="form-label">Foto Barang</label>
+        <input type="file" class="form-control" name="foto">
+
+        @if(!empty($item->foto))
+            <div class="mt-2">
+                <small>Foto Saat Ini:</small><br>
+                <img src="{{ Storage::url($item->foto) }}" width="120" class="img-thumbnail">
+            </div>
+        @endif
+    </div>
+
+    <button class="btn btn-primary mt-2">Submit</button>
 </form>

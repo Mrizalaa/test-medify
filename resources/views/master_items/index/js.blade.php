@@ -3,74 +3,93 @@
 <script src="https://cdn.datatables.net/1.12.1/js/dataTables.bootstrap5.min.js"></script>
 
 <script>
-    var start_date = '';
-    var end_date = '';
-    var data_per_fetch = 500;
-    var data_fetched = 0;
-
     $(document).ready(function() {
-        $('#table').DataTable({
+        let dataTableObj = $('#table').DataTable({
             searching: false,
-            order: [[0, 'desc']],
+            order: [[1, 'desc']], // urut berdasarkan Kode
         });
-        getData()
-    });
 
-    $('.btn-get-data').click(function() {
-        getData()
-    })
+        getData();
 
-    function getData(){
-        
-        $('#loading-filter').show();
-        var dataTableObj = $('#table').DataTable();
-        var filter_kode = $('#filter-kode').val()
-        var filter_nama = $('#filter-nama').val()
-        var filter_harga_min = $('#filter-harga-min').val()
-        var filter_harga_max = $('#filter-harga-max').val()
-        dataTableObj.clear().draw();
+        $('.btn-get-data').click(function() {
+            getData();
+        });
 
-        $.ajax({
-            url: '{{url("master-items/search")}}',
-            dataType: 'json',
-            tryCount: 0,
-            retryLimit: 3,
-            data: 'kode=' + filter_kode + '&nama=' + filter_nama + '&hargamin=' + filter_harga_min + '&hargamax=' + filter_harga_max,
-            success: function(results) {
-                var data = results.data
+        function getData() {
+            $('#loading-filter').show();
 
-                $.each(data, function(index, item) {
-                    array_temp = [];
-                    var harga_jual = item.harga_beli + item.harga_beli * item.laba / 100;
-                    harga_jual = Math.round(harga_jual)
-                    var kode = item.kode;
+            let filter_kode      = $('#filter-kode').val();
+            let filter_nama      = $('#filter-nama').val();
+            let filter_harga_min = $('#filter-harga-min').val();
+            let filter_harga_max = $('#filter-harga-max').val();
 
-                    var html = `<a href="{{url('master-items/view/')}}/` + kode + `" class="btn btn-primary">View</a>`
+            dataTableObj.clear().draw();
 
-                    $.each(item, function(obj_name, obj_value) {
-                        if (obj_name == 'laba') return false;
-                        array_temp.push(obj_value)
-                    })
-                    array_temp.push(harga_jual)
-                    array_temp.push(item.supplier)
-                    array_temp.push(html)
+            $.ajax({
+                url: '{{ url("master-items/search") }}',
+                dataType: 'json',
+                method: 'GET',
+                tryCount: 0,
+                retryLimit: 3,
+                data: {
+                    kode: filter_kode,
+                    nama: filter_nama,
+                    hargamin: filter_harga_min,
+                    hargamax: filter_harga_max
+                },
+                success: function(results) {
 
+                    console.log('RESULTS AJAX:', results);
 
-                    dataTableObj.row.add(array_temp).draw(true);
-                });
-                $('#loading-filter').hide();
-            },
-            error: function(xhr, textStatus, errorThrown) {
-                this.tryCount++;
-                if (this.tryCount <= this.retryLimit) {
-                    $.ajax(this);
-                    return;
+                    let data = results.data || [];
+
+                    $.each(data, function(index, item) {
+
+                        let harga_jual = item.harga_jual; // dari backend
+
+                        // Foto
+                        let foto = item.foto_url
+                            ? `<img src="${item.foto_url}" width="80">`
+                            : 'No Image';
+
+                        // Kategori
+                        let kategori = item.kategori_nama && item.kategori_nama !== ''
+                            ? item.kategori_nama
+                            : '-';
+
+                        // Tombol view
+                        let htmlView = `<a href="{{ url('master-items/view/') }}/${item.kode}" class="btn btn-primary btn-sm">View</a>`;
+
+                        let rowData = [
+                            foto,
+                            item.kode,
+                            item.nama,
+                            item.jenis,
+                            kategori,          
+                            item.harga_beli,
+                            harga_jual,
+                            item.supplier,
+                            htmlView
+                        ];
+
+                        dataTableObj.row.add(rowData);
+                    });
+
+                    dataTableObj.draw(false);
+                    $('#loading-filter').hide();
+                },
+
+                error: function(xhr, textStatus, errorThrown) {
+                    console.error('AJAX ERROR:', textStatus, errorThrown, xhr.status, xhr.responseText);
+                    this.tryCount++;
+                    if (this.tryCount <= this.retryLimit) {
+                        $.ajax(this);
+                        return;
+                    }
+                    alert('Terjadi kesalahan server, tidak dapat mengambil data');
+                    $('#loading-filter').hide();
                 }
-                alert('Terjadi kesalahan server, tidak dapat mengambil data')
-                $('#loading-filter').hide();
-
-                return;
-            }
-        })
-    }
+            });
+        }
+    });
 </script>
